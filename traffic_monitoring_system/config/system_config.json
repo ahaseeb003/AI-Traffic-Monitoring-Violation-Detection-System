@@ -1,0 +1,61 @@
+{
+    "system": {
+        "name": "AI Traffic Monitoring System",
+        "version": "1.0.0"
+    },
+
+    "detection": {
+        "yolo_model": "yolov8n.pt",
+        "confidence_threshold": 0.4,
+        "device": "cpu",
+        "vehicle_classes": {
+            "2": "Car",
+            "3": "Motorcycle",
+            "5": "Bus",
+            "7": "Truck"
+        }
+    },
+
+    "plate_detection": {
+        "min_plate_area": 500,
+        "max_plate_area": 50000,
+        "aspect_ratio_min": 1.5,
+        "aspect_ratio_max": 6.0
+    },
+
+    "ocr": {
+        "engine": "easyocr",
+        "languages": ["en"],
+        "min_confidence": 0.3,
+        "min_plate_length": 3,
+        "max_plate_length": 15,
+        "max_attempts_per_vehicle": 10
+    },
+
+    "tracking": {
+        "max_age": 30,
+        "min_hits": 3,
+        "iou_threshold": 0.3
+    },
+
+    "processing": {
+        "frame_skip": 0,
+        "target_fps": null,
+        "resize": null
+    },
+
+    "output": {
+        "csv_path": "output/detection_log.csv",
+        "save_plates": true,
+        "plates_dir": "output/plates",
+        "violations_dir": "output/violations",
+        "output_video": null
+    },
+
+    "display": {
+        "enabled": true,
+        "show_counts": true,
+        "show_fps": true,
+        "show_timestamp": true
+    }
+}

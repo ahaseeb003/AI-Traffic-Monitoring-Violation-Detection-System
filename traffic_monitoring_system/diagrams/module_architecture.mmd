@@ -1,0 +1,53 @@
+flowchart LR
+    classDef mainNode fill:#F44336,stroke:#C62828,color:#fff,stroke-width:3px,font-weight:bold,font-size:16px
+    classDef inputMod fill:#4CAF50,stroke:#2E7D32,color:#fff,stroke-width:2px
+    classDef coreMod fill:#2196F3,stroke:#1565C0,color:#fff,stroke-width:2px
+    classDef analysisMod fill:#FF9800,stroke:#E65100,color:#fff,stroke-width:2px
+    classDef outputMod fill:#9C27B0,stroke:#6A1B9A,color:#fff,stroke-width:2px
+    classDef configMod fill:#607D8B,stroke:#37474F,color:#fff,stroke-width:2px
+    classDef dataMod fill:#00BCD4,stroke:#00838F,color:#fff,stroke-width:2px
+
+    MAIN["🎯 main.py\nTrafficMonitoringSystem\nOrchestrator"]:::mainNode
+
+    subgraph INPUT ["📥 INPUT LAYER"]
+        direction TB
+        VI["video_input.py\n─────────────\n• Video File\n• Webcam\n• RTSP Stream\n• FPS Control\n• Frame Resize"]:::inputMod
+    end
+
+    subgraph DETECTION ["🔍 DETECTION LAYER"]
+        direction TB
+        VD["vehicle_detector.py\n─────────────\n• YOLOv8 Model\n• Car / Bike / Bus / Truck\n• Confidence Scoring\n• Vehicle Counting\n• Region Cropping"]:::coreMod
+        PD["plate_detector.py\n─────────────\n• Contour Detection\n• Morphological Ops\n• Aspect Ratio Filter\n• Plate Preprocessing\n• Noise Handling"]:::coreMod
+        OR["ocr_reader.py\n─────────────\n• EasyOCR Engine\n• Text Cleaning\n• Plate Validation\n• Misread Correction\n• Confidence Score"]:::coreMod
+    end
+
+    subgraph ANALYSIS ["📊 ANALYSIS LAYER"]
+        direction TB
+        CD["color_detector.py\n─────────────\n• HSV Color Space\n• K-Means Clustering\n• 10 Color Classes\n• Center Sampling\n• Dominant Color"]:::analysisMod
+        VLD["violation_detector.py\n─────────────\n• Wrong Way\n• Lane Violation\n• Red Light\n• Custom Rules\n• Motion Analysis"]:::analysisMod
+        TR["tracker.py\n─────────────\n• SORT Algorithm\n• Kalman Filter\n• Hungarian Match\n• Persistent IDs\n• Duplicate Prevention"]:::analysisMod
+    end
+
+    subgraph OUTPUT ["📤 OUTPUT LAYER"]
+        direction TB
+        CSV["csv_logger.py\n─────────────\n• Auto CSV Creation\n• Duplicate Check\n• Thread-Safe\n• Auto Serial No.\n• Append Mode"]:::outputMod
+        DB["dashboard.py\n─────────────\n• Bounding Boxes\n• Plate Labels\n• Violation Alerts\n• Vehicle Counts\n• FPS Display"]:::outputMod
+    end
+
+    subgraph CONFIG ["⚙️ CONFIGURATION"]
+        direction TB
+        SC["system_config.json\n─────────────\n• Model Settings\n• Thresholds\n• I/O Paths"]:::configMod
+        VR["violation_rules.json\n─────────────\n• Rule Definitions\n• Zone Boundaries\n• Custom Rules"]:::configMod
+    end
+
+    VI --> MAIN
+    MAIN --> VD
+    VD --> TR
+    TR --> PD
+    PD --> OR
+    MAIN --> CD
+    MAIN --> VLD
+    VLD --> CSV
+    OR --> CSV
+    MAIN --> DB
+    CONFIG --> MAIN

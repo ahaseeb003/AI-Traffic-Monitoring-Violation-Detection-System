@@ -1,0 +1,110 @@
+flowchart TD
+    classDef inputNode fill:#4CAF50,stroke:#2E7D32,color:#fff,stroke-width:2px,font-weight:bold
+    classDef processNode fill:#2196F3,stroke:#1565C0,color:#fff,stroke-width:2px
+    classDef detectionNode fill:#FF9800,stroke:#E65100,color:#fff,stroke-width:2px
+    classDef trackNode fill:#9C27B0,stroke:#6A1B9A,color:#fff,stroke-width:2px
+    classDef outputNode fill:#F44336,stroke:#C62828,color:#fff,stroke-width:2px
+    classDef decisionNode fill:#FFC107,stroke:#F57F17,color:#000,stroke-width:2px
+    classDef logNode fill:#00BCD4,stroke:#00838F,color:#fff,stroke-width:2px
+
+    START(["🎬 VIDEO INPUT SOURCE"]):::inputNode
+    SRC1["📁 Video File\n(MP4, AVI, MKV)"]:::inputNode
+    SRC2["📷 Webcam\n(Device Index)"]:::inputNode
+    SRC3["📡 RTSP/CCTV\n(Stream URL)"]:::inputNode
+
+    START --> SRC1 & SRC2 & SRC3
+    SRC1 & SRC2 & SRC3 --> VINPUT
+
+    VINPUT["VideoInput Module\nOpen source, read frames,\nFPS control, optional resize"]:::processNode
+
+    VINPUT --> FRAME["Read Next Frame"]:::processNode
+    FRAME --> SKIP{"Frame Skip\nCheck"}:::decisionNode
+    SKIP -- "Skip Frame" --> FRAME
+    SKIP -- "Process Frame" --> YOLO
+
+    YOLO["🚗 Vehicle Detection\n(YOLOv8)\nDetect: Car, Motorcycle,\nBus, Truck"]:::detectionNode
+
+    YOLO --> DETS{"Vehicles\nDetected?"}:::decisionNode
+    DETS -- "No" --> DASHBOARD
+    DETS -- "Yes" --> TRACKER
+
+    TRACKER["🔄 Vehicle Tracker\n(SORT Algorithm)\nKalman Filter + Hungarian\nAssign persistent Track IDs"]:::trackNode
+
+    TRACKER --> TRACKED["Tracked Objects\nwith unique IDs"]:::trackNode
+
+    TRACKED --> NEWCHECK{"New Vehicle\n(First time seen)?"}:::decisionNode
+    NEWCHECK -- "No (Already processed)" --> VUPDATE
+    NEWCHECK -- "Yes (New track)" --> CROP
+
+    CROP["Crop Vehicle Region\nfrom frame using bbox"]:::processNode
+
+    CROP --> COLOR
+    CROP --> PLATE
+
+    COLOR["🎨 Color Detection\n(HSV Analysis)\nExtract dominant color:\nRed, Blue, White, Black,\nSilver, Gray, etc."]:::detectionNode
+
+    PLATE["🔍 Plate Detection\n(Contour + Morphological)\nLocate plate region,\ncrop plate area"]:::detectionNode
+
+    PLATE --> PLATEFOUND{"Plate\nFound?"}:::decisionNode
+    PLATEFOUND -- "No" --> RETRY{"OCR Attempts\n< Max?"}:::decisionNode
+    RETRY -- "Yes" --> VUPDATE
+    RETRY -- "No (Give up)" --> VUPDATE
+    PLATEFOUND -- "Yes" --> PREPROCESS
+
+    PREPROCESS["Preprocess Plate\nResize, Denoise,\nAdaptive Threshold,\nDilation"]:::processNode
+
+    PREPROCESS --> OCR
+
+    OCR["📖 OCR Reader\n(EasyOCR)\nRead plate text,\nClean & Validate output"]:::detectionNode
+
+    OCR --> OCRCHECK{"Valid Plate\nText?"}:::decisionNode
+    OCRCHECK -- "No" --> VUPDATE
+    OCRCHECK -- "Yes" --> SAVEPLATE
+
+    SAVEPLATE["💾 Save Plate Crop\n(output/plates/)"]:::logNode
+
+    COLOR --> VUPDATE
+    SAVEPLATE --> VUPDATE
+
+    VUPDATE["Update Track Data\nPlate, Color, Position"]:::trackNode
+
+    VUPDATE --> VIOLATION
+
+    VIOLATION["🚦 Violation Detection\n(Rule Engine)\nCheck: Wrong Way,\nLane Violation,\nRed Light, Custom Rules"]:::detectionNode
+
+    VIOLATION --> VFOUND{"Violation\nDetected?"}:::decisionNode
+    VFOUND -- "No" --> LOGCHECK
+    VFOUND -- "Yes" --> LOGVIOLATION
+
+    LOGVIOLATION["⚠️ Record Violation\nType + Track ID"]:::outputNode
+    LOGVIOLATION --> LOGCHECK
+
+    LOGCHECK{"Ready to\nLog to CSV?"}:::decisionNode
+    LOGCHECK -- "Already logged\nor no plate" --> DASHBOARD
+    LOGCHECK -- "New entry" --> CSVLOG
+
+    CSVLOG["📊 CSV Logger\nLog: S.No, Plate, Type,\nColor, Violation,\nTimestamp, Confidence"]:::logNode
+
+    CSVLOG --> DUPCHECK["Duplicate Prevention\n(plate + track ID check)"]:::logNode
+    DUPCHECK --> DASHBOARD
+
+    DASHBOARD["📺 Real-Time Dashboard\nDraw: Bounding Boxes,\nTrack IDs, Plate Numbers,\nColors, Violations,\nVehicle Counts, FPS"]:::outputNode
+
+    DASHBOARD --> DISPLAY["Display Frame\n(OpenCV Window)"]:::outputNode
+    DASHBOARD --> VIDOUT["Save to Output Video\n(optional)"]:::logNode
+
+    DISPLAY --> KEYCHECK{"User Key\nPress?"}:::decisionNode
+    KEYCHECK -- "'q' = Quit" --> CLEANUP
+    KEYCHECK -- "'s' = Snapshot" --> SNAP["Save Snapshot"]:::logNode
+    KEYCHECK -- "'r' = Reset" --> RESET["Reset Counts"]:::processNode
+    KEYCHECK -- "No key" --> MOREFRAMES
+    SNAP --> MOREFRAMES
+    RESET --> MOREFRAMES
+
+    MOREFRAMES{"More Frames\nAvailable?"}:::decisionNode
+    MOREFRAMES -- "Yes" --> FRAME
+    MOREFRAMES -- "No (End of video)" --> CLEANUP
+
+    CLEANUP["🧹 Cleanup\nRelease video source,\nClose windows,\nClose video writer"]:::outputNode
+
+    CLEANUP --> SUMMARY["📋 Session Summary\nTotal vehicles detected,\nCounts by type,\nTotal entries logged,\nCSV output path"]:::outputNode

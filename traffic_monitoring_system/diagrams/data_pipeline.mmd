@@ -1,0 +1,70 @@
+sequenceDiagram
+    autonumber
+    participant V as 📹 Video Source
+    participant VI as VideoInput
+    participant VD as VehicleDetector<br/>(YOLOv8)
+    participant TR as VehicleTracker<br/>(SORT)
+    participant PD as PlateDetector
+    participant OCR as OCRReader<br/>(EasyOCR)
+    participant CD as ColorDetector
+    participant VLD as ViolationDetector
+    participant CSV as CSVLogger
+    participant DB as Dashboard
+
+    Note over V,DB: 🔄 MAIN PROCESSING LOOP (per frame)
+
+    V->>VI: Raw video stream
+    VI->>VI: FPS control & resize
+    VI->>VD: BGR frame
+
+    rect rgb(230, 245, 255)
+        Note over VD: STEP 1: Vehicle Detection
+        VD->>VD: YOLOv8 inference
+        VD-->>TR: Detections [bbox, class, confidence]
+    end
+
+    rect rgb(245, 230, 255)
+        Note over TR: STEP 2: Multi-Object Tracking
+        TR->>TR: Kalman predict + Hungarian match
+        TR-->>TR: Assign Track IDs
+    end
+
+    loop For each tracked vehicle
+        rect rgb(255, 243, 224)
+            Note over PD,OCR: STEP 3: Plate Detection & OCR
+            TR->>PD: Vehicle crop
+            PD->>PD: Contour + Morphological detection
+            PD-->>OCR: Plate crop (if found)
+            OCR->>OCR: EasyOCR read + clean + validate
+            OCR-->>CSV: Plate text + confidence
+        end
+
+        rect rgb(232, 245, 233)
+            Note over CD: STEP 4: Color Detection
+            TR->>CD: Vehicle crop
+            CD->>CD: HSV analysis
+            CD-->>CSV: Dominant color
+        end
+
+        rect rgb(255, 235, 238)
+            Note over VLD: STEP 5: Violation Check
+            TR->>VLD: Track position + vehicle type
+            VLD->>VLD: Check rules (wrong way, lane, etc.)
+            VLD-->>CSV: Violations list
+        end
+    end
+
+    rect rgb(224, 247, 250)
+        Note over CSV: STEP 6: Data Logging
+        CSV->>CSV: Duplicate check (plate + track ID)
+        CSV->>CSV: Append to CSV file
+    end
+
+    rect rgb(243, 229, 245)
+        Note over DB: STEP 7: Dashboard Render
+        TR-->>DB: Tracked objects + metadata
+        DB->>DB: Draw boxes, labels, counts, FPS
+        DB-->>V: Display frame / Save video
+    end
+
+    Note over V,DB: ↩️ Loop back to next frame

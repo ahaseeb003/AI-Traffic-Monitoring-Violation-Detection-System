@@ -1,0 +1,51 @@
+{
+    "enabled_violations": [
+        "wrong_way",
+        "lane_violation",
+        "no_helmet",
+        "speed_estimation"
+    ],
+
+    "wrong_way": {
+        "expected_direction": "down",
+        "direction_threshold": 30,
+        "description": "Detects vehicles moving against the expected traffic flow direction. Options: up, down, left, right."
+    },
+
+    "lane_violation": {
+        "lane_boundaries": [],
+        "restricted_lanes": [],
+        "description": "Define lane boundaries as [[x_start, x_end], ...] and restricted_lanes as [{lane_index, restricted_types: [Car, Motorcycle, Bus, Truck]}]."
+    },
+
+    "signal_zone": {
+        "enabled": false,
+        "zone": null,
+        "active": false,
+        "description": "Set zone as [x1, y1, x2, y2] to define the red light crossing area. Set active to true when red light is on."
+    },
+
+    "custom_rules": [
+        {
+            "name": "Illegal Parking",
+            "type": "restricted_zone",
+            "zone": null,
+            "vehicle_types": [],
+            "description": "Define a restricted parking zone as [x1, y1, x2, y2]. Leave vehicle_types empty to apply to all."
+        },
+        {
+            "name": "Wrong Turn",
+            "type": "wrong_turn",
+            "min_turn_angle": 60,
+            "description": "Detects sudden direction changes exceeding the specified angle threshold."
+        }
+    ],
+
+    "_help": {
+        "how_to_configure": "Edit this file to enable/disable violations and set zone boundaries.",
+        "lane_boundaries_example": "[[0, 200], [200, 400], [400, 600]] defines 3 lanes.",
+        "restricted_lanes_example": "[{\"lane_index\": 0, \"restricted_types\": [\"Truck\", \"Bus\"]}] restricts lane 0 for trucks and buses.",
+        "signal_zone_example": "Set zone to [100, 300, 500, 400] and active to true during red light.",
+        "custom_zone_example": "Set zone to [50, 50, 300, 200] to define a no-parking area."
+    }
+}
